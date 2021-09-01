@@ -1,0 +1,330 @@
+// sketch_aug01a_blink, for arduino Mega und modified DGT clock
+// - just a test
+
+// DGT mit REED:
+// braun = dig_out (braun) an D7
+// rot     (+) Vcc
+// orange  (-)
+// two blinking Leds show who is to move
+// Serial monitor shows move No and time left
+
+/*
+   Created by ArduinoGetStarted.com
+
+   This example code is in the public domain
+
+   Tutorial page: https://arduinogetstarted.com/tutorials/arduino-button-library
+
+   This example detects the pressed and released events of a button without debounce.
+*/
+
+
+//MULTITASKING WITH ARDUINO
+//https://roboticsbackend.com/how-to-do-multitasking-with-arduino/
+
+
+
+#include <ezButton.h>
+
+ezButton button(7);  // create ezButton object that attach to pin 7;
+String a = "one";
+String expression1 = "";
+String expression2 = "";
+String expression1a = "";
+String expression2a = "";
+
+int countUp = 0;
+unsigned long time0;
+unsigned long timew;
+unsigned long timewTotal;
+unsigned long timeb;
+unsigned long timebTotal;
+long timew_left = 6000;
+long timeb_left = 6000;
+int w_hrs, w_mins, w_secs = 0;
+int b_hrs, b_mins, b_secs = 0;
+
+unsigned long timeFormove_w;
+unsigned long timeFormove_b;
+
+unsigned long time4game = 2; //time for game (minutes);
+unsigned long increment = 1; //increment per move (seconds);
+
+unsigned long previousTimeLed4 = millis();
+unsigned long previousTimeLed5 = millis();
+unsigned long previousTimeLed9 = millis();
+unsigned long previousTimeTimecontrol = millis();
+
+long timeIntervalLed4 = 250;
+
+//LED STATES to keep track
+int ledState4 = LOW;
+int ledState5 = LOW;
+int ledState6 = LOW;
+int ledState8 = LOW;
+int ledState9 = LOW;
+
+long timeIntervalTime_left = 2000;
+//long timeIntervalSerialPrint = 2000;
+int n = 1;
+
+
+void setup() {
+  button.setDebounceTime(50);
+  button.setCountMode(COUNT_BOTH);
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB
+  }
+
+
+  pinMode(9, OUTPUT);
+  digitalWrite(9, LOW); //yellow2 LED off
+  pinMode(8, OUTPUT);
+  digitalWrite(8, LOW); //yellow LED off
+  pinMode(6, OUTPUT);
+  digitalWrite(6, LOW); //red LED off
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW); //red LED off
+  pinMode(4, OUTPUT);
+  digitalWrite(4, HIGH); //green LED on
+
+  // Switch on LEDS for 200 msecs
+  digitalWrite(9, HIGH); //yellow2 LED
+  digitalWrite(8, HIGH); //yellow LED
+  digitalWrite(6, HIGH); //red LED on
+  digitalWrite(5, HIGH); //red LED on
+  digitalWrite(4, HIGH); //green LED on
+  delay(500);
+  digitalWrite(9, LOW); //yellow2 LED off
+  digitalWrite(8, LOW); //yellow LED off
+  digitalWrite(5, LOW); //red LED on
+  digitalWrite(6, LOW); //red LED off
+  digitalWrite(4, LOW); //green LED off
+  delay(500);
+  digitalWrite(9, HIGH); //yellow2 LED
+  digitalWrite(8, HIGH); //yellow LED
+  digitalWrite(6, HIGH); //red LED on
+  digitalWrite(5, HIGH); //red LED on
+  digitalWrite(4, HIGH); //green LED on
+  delay(500);
+  digitalWrite(9, LOW); //yellow2 LED off
+  digitalWrite(8, LOW); //yellow LED off
+  digitalWrite(6, LOW); //red LED off
+  digitalWrite(5, LOW); //red LED off
+  digitalWrite(4, LOW); //green LED off
+
+  Serial.println("LedStates set");
+  Serial.print("Timew = ");
+  Serial.print(timew);
+  Serial.println(" secs");
+  Serial.print("Timeb = ");
+  Serial.print(timeb);
+  Serial.println(" secs");
+  Serial.print("Movecounter = ");
+  Serial.println (countUp);
+  Serial.print("Buttonpressed Counter = ");
+  Serial.println (button.getCount());
+
+  Serial.println("ready! ... ");
+  Serial.println("Black Player now starts the game by pressing the Lever ");
+  Serial.println("");
+  Serial.println("Move" "\t" "Player1[w/b]" "\t" "secs used" "\t" "secs total" "\t" "time left""\t" "\t"   "Move " "\t" "Player2[w/b]" "\t" "secs used" "\t" "secs total""\t" "time left");
+}
+
+
+void loop() {
+  button.loop(); // MUST call the loop() function first
+  unsigned long count = button.getCount();
+  int btnState = button.getState();
+  unsigned long currentTime = millis();
+  unsigned long currentTime2 = millis();
+
+  //TASK 1 Blink LED4
+  if (btnState = 1) {
+    if (currentTime - previousTimeLed4 > timeIntervalLed4) {
+      previousTimeLed4 = currentTime;
+      ledState4 = !ledState4;
+
+      //nächste Zeile auskommentieren um BlinkLed auszuschalten
+      //digitalWrite(4, ledState4); //blink
+    }
+    //Serial.println(ledState8); //Status der gelben LED
+    //Serial.println(ledState6); //Status der roten LED
+  }
+
+
+  //TASK0 Zeitkontrolle, intervall 0,5 sec
+
+  /*
+     //TASK 2
+     if (Serial.available()) {
+       a = Serial.parseInt();
+       if (userInput >= 0 && userInput < 256) {
+      analogWrite(4, userInput);
+      Serial.println(
+       }
+     }
+  */
+
+  //TASK 2a Serial read Try
+  /*
+    while(Serial.available()) {
+    a= Serial.readString();// read the incoming data as string
+    Serial.println(a);}
+  */
+
+  //TASK 3 Schalten von LED9:
+  if (ledState8 == HIGH and ledState4 == HIGH)
+  {
+    ledState9 = HIGH;
+    previousTimeLed9 = currentTime;
+    digitalWrite(9, ledState9);
+    if (currentTime - previousTimeLed9 < timeIntervalLed4) {
+      ledState9 = !ledState9;
+      digitalWrite(9, ledState9); //signal
+    }
+  }
+
+
+  //Schalten von LED5:
+  if (ledState6 == HIGH and ledState4 == HIGH)
+  {
+    ledState5 = HIGH;
+    previousTimeLed5 = currentTime;
+    digitalWrite(5, ledState5);
+    if (currentTime - previousTimeLed5 < timeIntervalLed4) {
+      ledState5 = !ledState5;
+      digitalWrite(5, ledState5); //signal
+
+    }
+  }
+
+
+  if (button.isReleased()) { //black pressed button down to start game, white time is running
+    digitalWrite(8, HIGH);    //yellow LED on
+    ledState8 = HIGH;
+    digitalWrite(6, LOW);     //red  LED off
+    ledState6 = LOW;
+    //Serial.print("Button pressed No ");
+    //Serial.println(button.getCount());
+
+    if (button.getCount() == 1) { //Black starts the game bei pressing the Lever as if he has done move 0, time is taken and a starting tone is played
+      timeb = millis() / 1000;
+      tone(3, 1000, 300); // after Start by Black => 300 msec Tone 333 Hz
+    }
+
+
+    if (button.getCount() > 1) {
+      tone(3, 1000, 30);
+      timeb = millis() / 1000;
+      timeFormove_b = -timew + timeb;
+      timebTotal = timeFormove_b + timebTotal;
+
+      timeb_left = time4game * 60 - timebTotal ; //time left in seconds for printintout
+      timeb_left = timeb_left + button.getCount() / 2 * increment; //mit increment
+
+      //Serial.println (timeb);
+      //Serial.println (timew);
+      expression2 = String(button.getCount() / 2) + "\t" "BLACK moved"  "\t" + String(timeFormove_b) + "\t""\t"  +  timebTotal + "\t" + "\t";
+      Serial.print(expression2);
+
+
+      b_secs = timeb_left % 60;
+      b_mins = (timeb_left % 3600) / 60;
+      b_hrs = timeb_left / 3600;
+
+
+      if (b_secs < 10) {
+        expression2a = String(b_hrs) + String(":") +  String(b_mins + String(":0")) + String(b_secs);
+      }
+      else {
+        expression2a = String(b_hrs) + String(":") +  String(b_mins + String(":")) + String(b_secs);
+      }
+
+      expression2a = "0" + String(b_hrs);
+
+      if (b_mins < 10) {
+        expression2a = expression2a + ":0" + String(b_mins);
+      }
+      else {
+        expression2a = expression2a + ":" + String(b_mins);
+      }
+
+      if (b_secs < 10) {
+        expression2a = expression2a + ":0" + String(b_secs);
+      }
+      else {
+        expression2a = expression2a + ":" + String(b_secs);
+      }
+      if (timeb_left < 0) {
+        expression2a = "LOSS ON TIME";
+        tone(3, 1400, 1000);
+      }
+      Serial.println(expression2a);
+    }
+  }
+
+
+  if (button.isPressed()) {  //white time is stopped, Blacks time is running
+
+    tone(3, 2000, 30);
+    digitalWrite(8, LOW);  //yellow LED off
+    ledState8 = LOW;
+    // LED 6 ist abgeschaltet
+    digitalWrite(6, HIGH); //red  LED on
+    ledState6 = HIGH;
+    //Serial.print("Button pressed No ");
+    //Serial.println(button.getCount());
+    //Serial.println (timeb);
+    //Serial.println (timew);
+
+    timew = millis() / 1000;
+    timeFormove_w = timew - timeb;
+    timewTotal = timeFormove_w + timewTotal;
+
+    timew_left = time4game * 60 - timewTotal ;
+    timew_left = timew_left + button.getCount() / 2 * increment; //mit increment
+
+    expression1 = String(button.getCount() / 2) + "\t" + "WHITE moved" "\t" + String(timeFormove_w) + "\t""\t"  +  timewTotal + "\t" + "\t" ;//timew_left + "\t" + "\t" "\t";
+    Serial.print(expression1);
+
+    w_secs = timew_left % 60;
+    w_mins = (timew_left % 3600) / 60;
+    w_hrs = timew_left / 3600;
+
+    if (w_secs < 10) {
+      expression1a = String(w_hrs) + String(":") +  String(w_mins + String(":0")) + String(w_secs);
+    }
+    else {
+      expression1a = String(w_hrs) + String(":") +  String(w_mins + String(":")) + String(w_secs);
+    }
+
+    expression1a = "0" + String(w_hrs);
+
+    if (w_mins < 10) {
+      expression1a = expression1a + ":0" + String(w_mins);
+    }
+    else {
+      expression1a = expression1a + ":" + String(w_mins);
+    }
+
+
+    if (w_secs < 10) {
+      expression1a = expression1a + ":0" + String(w_secs);
+    }
+    else {
+      expression1a = expression1a + ":" + String(w_secs);
+    }
+
+    if (timew_left < 0) {
+      expression1a = "LOSS ON TIME";
+      tone(3, 1400, 1000);
+    }
+
+
+    Serial.print(expression1a + "\t" + "\t");
+
+    timeb = millis() / 1000;
+  }
+}
